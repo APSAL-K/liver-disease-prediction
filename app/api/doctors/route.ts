@@ -1,61 +1,60 @@
-import { connectDB } from '@/lib/db';
-import { verifyAuth } from '@/lib/auth';
-import { Doctor } from '@/lib/models/Doctor';
+import { getDb } from '@/lib/db-sqlite';
 import { NextRequest, NextResponse } from 'next/server';
+import { handleError, AppError } from '@/lib/api';
+import crypto from 'crypto';
 
-export async function GET(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    await connectDB();
-    const { searchParams } = new URL(req.url);
-    const specialty = searchParams.get('specialty');
-    const rating = searchParams.get('minRating');
+    const body = await request.json();
+    const { userId, specialty, qualifications, clinicName, clinicAddress, consultationFee, experience } = body;
 
-    const filters: any = { isVerified: true };
-    if (specialty) filters.specialty = specialty;
-    if (rating) filters.averageRating = { $gte: parseFloat(rating) };
+    if (!userId) {
+      throw new AppError(400, 'User ID is required');
+    }
 
-    const doctors = await Doctor.find(filters)
-      .select('name specialty qualifications averageRating totalReviews yearsExperience bio clinic')
-      .sort({ averageRating: -1 })
-      .limit(50);
+    const db = getDb();
 
-    return NextResponse.json({ success: true, data: doctors });
+    // Check if doctor already exists for this user
+    const existingDoctor = db.prepare('SELECT id FROM doctors WHERE userId = ?').get(userId);
+    if (existingDoctor) {
+      throw new AppError(400, 'Doctor profile already exists for this user');
+    }
+
+    const doctorId = crypto.randomUUID();
+    const insertDoctor = db.prepare(`
+      INSERT INTO doctors (id, userId, specialty, qualifications, clinicName, clinicAddress, consultationFee, experience)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    insertDoctor.run(doctorId, userId, specialty, qualifications, clinicName, clinicAddress, consultationFee || 500, experience || 0);
+
+    return NextResponse.json({ id: doctorId, message: 'Doctor profile created' }, { status: 201 });
   } catch (error) {
-    console.error('Doctors fetch error:', error);
-    return NextResponse.json({ error: 'Failed to fetch doctors' }, { status: 500 });
+    return handleError(error);
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const auth = await verifyAuth(req);
-    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (auth.role !== 'doctor') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const { searchParams } = new URL(request.url);
+    const specialty = searchParams.get('specialty');
 
-    await connectDB();
-    const body = await req.json();
-    const { specialty, qualifications, bio, clinic, licenseNumber } = body;
+    const db = getDb();
 
-    if (!specialty || !qualifications || !licenseNumber) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    let query = 'SELECT d.*, u.fullName FROM doctors d JOIN users u ON d.userId = u.id';
+    let params: any[] = [];
+
+    if (specialty) {
+      query += ' WHERE d.specialty LIKE ?';
+      params.push(`%${specialty}%`);
     }
 
-    const doctor = await Doctor.findByIdAndUpdate(
-      auth.userId,
-      {
-        specialty,
-        qualifications,
-        bio,
-        clinic,
-        licenseNumber,
-        isVerified: false,
-      },
-      { new: true, upsert: true }
-    );
+    query += ' ORDER BY d.rating DESC';
 
-    return NextResponse.json({ success: true, data: doctor });
+    const doctors = db.prepare(query).all(...params);
+
+    return NextResponse.json({ doctors }, { status: 200 });
   } catch (error) {
-    console.error('Doctor profile update error:', error);
-    return NextResponse.json({ error: 'Failed to update doctor profile' }, { status: 500 });
+    return handleError(error);
   }
 }

@@ -1,24 +1,21 @@
-import { connectDB } from '@/lib/db';
-import { Prediction } from '@/lib/models/Prediction';
+import { getDb } from '@/lib/db-sqlite';
 import { healthAssessmentSchema } from '@/lib/validators';
 import { NextRequest, NextResponse } from 'next/server';
 import { handleError, AppError } from '@/lib/api';
-import axios from 'axios';
+import crypto from 'crypto';
 
 // Mock ML prediction function (replace with actual API call)
 function calculateRiskLevel(metrics: any): { level: string; score: number; recommendations: string[] } {
-  const { totalBilirubin, directBilirubin, alkalinePhosphatase, sgpt, sgot, albumin, albuminGlobulinRatio } = metrics;
+  const { bilirubin, alkalinePhosphatase, sgpt, sgot, albumin } = metrics;
   
   let riskScore = 0;
 
   // Scoring logic based on medical parameters
-  if (totalBilirubin > 1.2) riskScore += (totalBilirubin > 2 ? 30 : 15);
-  if (directBilirubin > 0.3) riskScore += (directBilirubin > 0.8 ? 25 : 12);
+  if (bilirubin > 1.2) riskScore += (bilirubin > 2 ? 30 : 15);
   if (alkalinePhosphatase > 120) riskScore += (alkalinePhosphatase > 300 ? 20 : 10);
   if (sgpt > 40) riskScore += (sgpt > 100 ? 25 : 15);
   if (sgot > 40) riskScore += (sgot > 100 ? 25 : 15);
   if (albumin < 3.5) riskScore += (albumin < 3 ? 20 : 10);
-  if (albuminGlobulinRatio < 1.0) riskScore += (albuminGlobulinRatio < 0.7 ? 20 : 10);
 
   let riskLevel = 'None';
   let recommendations: string[] = [];
@@ -63,37 +60,60 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user ID from auth header
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      throw new AppError(401, 'Unauthorized');
-    }
-
     const userId = request.headers.get('x-user-id');
     if (!userId) {
       throw new AppError(401, 'User ID not found');
     }
 
-    await connectDB();
+    const db = getDb();
 
     // Calculate risk level
     const { level, score, recommendations } = calculateRiskLevel(parsed.data);
 
-    // Create prediction record
-    const prediction = new Prediction({
-      userId,
-      medicalMetrics: parsed.data,
-      riskLevel: level,
-      riskScore: score,
-      recommendations,
-    });
+    // Create health record
+    const healthRecordId = crypto.randomUUID();
+    const predictionId = crypto.randomUUID();
 
-    await prediction.save();
+    const insertHealthRecord = db.prepare(`
+      INSERT INTO health_records (id, userId, age, sex, alcohol, bilirubin, alkalinePhosphatase, sgpt, sgot, totalProtein, albumin, ratioCorrectedCalcium)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    insertHealthRecord.run(
+      healthRecordId,
+      userId,
+      parsed.data.age,
+      parsed.data.sex,
+      parsed.data.alcohol,
+      parsed.data.bilirubin,
+      parsed.data.alkalinePhosphatase,
+      parsed.data.sgpt,
+      parsed.data.sgot,
+      parsed.data.totalProtein,
+      parsed.data.albumin,
+      parsed.data.ratioCorrectedCalcium
+    );
+
+    // Create prediction record
+    const insertPrediction = db.prepare(`
+      INSERT INTO predictions (id, userId, healthRecordId, riskScore, riskLevel, recommendation)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+
+    insertPrediction.run(
+      predictionId,
+      userId,
+      healthRecordId,
+      score,
+      level,
+      recommendations.join('; ')
+    );
 
     return NextResponse.json(
       {
         success: true,
         prediction: {
-          id: prediction._id,
+          id: predictionId,
           riskLevel: level,
           riskScore: score,
           recommendations,
@@ -114,9 +134,16 @@ export async function GET(request: NextRequest) {
       throw new AppError(401, 'User ID not found');
     }
 
-    await connectDB();
+    const db = getDb();
 
-    const predictions = await Prediction.find({ userId }).sort({ createdAt: -1 }).limit(10);
+    const predictions = db
+      .prepare(`
+        SELECT * FROM predictions 
+        WHERE userId = ? 
+        ORDER BY createdAt DESC 
+        LIMIT 10
+      `)
+      .all(userId);
 
     return NextResponse.json({
       predictions,

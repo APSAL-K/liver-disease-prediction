@@ -1,115 +1,84 @@
-import { connectDB } from '@/lib/db';
-import { verifyAuth } from '@/lib/auth';
-import { Payment } from '@/lib/models/Payment';
-import { Appointment } from '@/lib/models/Appointment';
 import Stripe from 'stripe';
+import { getDb } from '@/lib/db-sqlite';
 import { NextRequest, NextResponse } from 'next/server';
+import { handleError, AppError } from '@/lib/api';
+import crypto from 'crypto';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2023-10-16' as any,
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const auth = await verifyAuth(req);
-    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const body = await request.json();
+    const { appointmentId, amount, userId } = body;
 
-    await connectDB();
-    const body = await req.json();
-    const { appointmentId, amount } = body;
-
-    if (!appointmentId || !amount) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!appointmentId || !amount || !userId) {
+      throw new AppError(400, 'Missing required fields');
     }
 
-    const appointment = await Appointment.findById(appointmentId);
-    if (!appointment) {
-      return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
-    }
+    const db = getDb();
 
-    // Create payment intent
+    // Create Stripe payment intent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100), // Convert to cents
       currency: 'usd',
-      metadata: {
-        appointmentId: appointmentId,
-        patientId: auth.userId,
-        doctorId: appointment.doctorId.toString(),
-      },
+      metadata: { appointmentId, userId },
     });
 
-    // Save payment record
-    const payment = await Payment.create({
-      appointmentId,
-      patientId: auth.userId,
-      doctorId: appointment.doctorId,
-      amount,
-      stripePaymentIntentId: paymentIntent.id,
-      status: 'pending',
-      createdAt: new Date(),
-    });
+    // Create payment record
+    const paymentId = crypto.randomUUID();
+    const insertPayment = db.prepare(`
+      INSERT INTO payments (id, appointmentId, userId, amount, status, stripePaymentId)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+
+    insertPayment.run(paymentId, appointmentId, userId, amount, 'pending', paymentIntent.id);
 
     return NextResponse.json({
-      success: true,
       clientSecret: paymentIntent.client_secret,
-      paymentId: payment._id,
-    });
+      paymentId,
+    }, { status: 201 });
   } catch (error) {
-    console.error('Payment creation error:', error);
-    return NextResponse.json({ error: 'Failed to create payment intent' }, { status: 500 });
+    return handleError(error);
   }
 }
 
-export async function PATCH(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const auth = await verifyAuth(req);
-    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
 
-    await connectDB();
-    const body = await req.json();
+    if (!userId) {
+      throw new AppError(400, 'userId is required');
+    }
+
+    const db = getDb();
+
+    const payments = db.prepare(`
+      SELECT * FROM payments WHERE userId = ? ORDER BY createdAt DESC
+    `).all(userId);
+
+    return NextResponse.json({ payments }, { status: 200 });
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json();
     const { paymentId, status } = body;
 
-    const payment = await Payment.findById(paymentId);
-    if (!payment) {
-      return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
+    if (!paymentId || !status) {
+      throw new AppError(400, 'paymentId and status are required');
     }
 
-    payment.status = status;
-    if (status === 'completed') {
-      payment.completedAt = new Date();
-      // Update appointment status
-      await Appointment.findByIdAndUpdate(payment.appointmentId, { status: 'confirmed' });
-    }
-    await payment.save();
+    const db = getDb();
 
-    return NextResponse.json({ success: true, data: payment });
+    const updatePayment = db.prepare('UPDATE payments SET status = ? WHERE id = ?');
+    updatePayment.run(status, paymentId);
+
+    return NextResponse.json({ message: 'Payment updated' }, { status: 200 });
   } catch (error) {
-    console.error('Payment update error:', error);
-    return NextResponse.json({ error: 'Failed to update payment' }, { status: 500 });
-  }
-}
-
-export async function GET(req: NextRequest) {
-  try {
-    const auth = await verifyAuth(req);
-    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    await connectDB();
-    const { searchParams } = new URL(req.url);
-    const appointmentId = searchParams.get('appointmentId');
-
-    const filters: any = {};
-    if (auth.role === 'patient') {
-      filters.patientId = auth.userId;
-    } else if (auth.role === 'doctor') {
-      filters.doctorId = auth.userId;
-    }
-    if (appointmentId) filters.appointmentId = appointmentId;
-
-    const payments = await Payment.find(filters).sort({ createdAt: -1 });
-    return NextResponse.json({ success: true, data: payments });
-  } catch (error) {
-    console.error('Payments fetch error:', error);
-    return NextResponse.json({ error: 'Failed to fetch payments' }, { status: 500 });
+    return handleError(error);
   }
 }

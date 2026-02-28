@@ -1,122 +1,98 @@
-import { connectDB } from '@/lib/db';
-import { verifyAuth } from '@/lib/auth';
-import { Appointment } from '@/lib/models/Appointment';
-import { Doctor } from '@/lib/models/Doctor';
+import { getDb } from '@/lib/db-sqlite';
 import { NextRequest, NextResponse } from 'next/server';
+import { handleError, AppError } from '@/lib/api';
+import crypto from 'crypto';
 
-export async function GET(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const auth = await verifyAuth(req);
-    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const body = await request.json();
+    const { patientId, doctorId, appointmentDate, notes } = body;
 
-    await connectDB();
-    const { searchParams } = new URL(req.url);
+    if (!patientId || !doctorId || !appointmentDate) {
+      throw new AppError(400, 'Missing required fields');
+    }
+
+    const db = getDb();
+
+    const appointmentId = crypto.randomUUID();
+    const insertAppointment = db.prepare(`
+      INSERT INTO appointments (id, patientId, doctorId, appointmentDate, status, notes)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+
+    insertAppointment.run(appointmentId, patientId, doctorId, appointmentDate, 'pending', notes || '');
+
+    return NextResponse.json({ id: appointmentId, message: 'Appointment booked' }, { status: 201 });
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const patientId = searchParams.get('patientId');
     const doctorId = searchParams.get('doctorId');
+    const status = searchParams.get('status');
 
-    const filters: any = {};
-    if (auth.role === 'patient') {
-      filters.patientId = auth.userId;
-    } else if (auth.role === 'doctor') {
-      filters.doctorId = auth.userId;
+    if (!patientId && !doctorId) {
+      throw new AppError(400, 'Either patientId or doctorId is required');
     }
-    if (doctorId) filters.doctorId = doctorId;
 
-    const appointments = await Appointment.find(filters)
-      .populate('doctorId', 'name specialty clinic')
-      .populate('patientId', 'name email phone')
-      .sort({ appointmentDate: 1 });
+    const db = getDb();
 
-    return NextResponse.json({ success: true, data: appointments });
+    let query = `
+      SELECT a.*, 
+             p.fullName as patientName, 
+             d.specialty, 
+             u.fullName as doctorName
+      FROM appointments a
+      JOIN users p ON a.patientId = p.id
+      JOIN doctors d ON a.doctorId = d.id
+      JOIN users u ON d.userId = u.id
+    `;
+
+    let params: any[] = [];
+
+    if (patientId) {
+      query += ' WHERE a.patientId = ?';
+      params.push(patientId);
+    } else if (doctorId) {
+      query += ' WHERE a.doctorId = ?';
+      params.push(doctorId);
+    }
+
+    if (status) {
+      query += patientId || doctorId ? ' AND a.status = ?' : ' WHERE a.status = ?';
+      params.push(status);
+    }
+
+    query += ' ORDER BY a.appointmentDate DESC';
+
+    const appointments = db.prepare(query).all(...params);
+
+    return NextResponse.json({ appointments }, { status: 200 });
   } catch (error) {
-    console.error('Appointments fetch error:', error);
-    return NextResponse.json({ error: 'Failed to fetch appointments' }, { status: 500 });
+    return handleError(error);
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function PATCH(request: NextRequest) {
   try {
-    const auth = await verifyAuth(req);
-    if (!auth || auth.role !== 'patient') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    await connectDB();
-    const body = await req.json();
-    const { doctorId, appointmentDate, appointmentTime, reason, notes } = body;
-
-    if (!doctorId || !appointmentDate || !appointmentTime) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-    }
-
-    // Verify doctor exists
-    const doctor = await Doctor.findById(doctorId);
-    if (!doctor) {
-      return NextResponse.json({ error: 'Doctor not found' }, { status: 404 });
-    }
-
-    // Check for conflicts
-    const existingAppointment = await Appointment.findOne({
-      doctorId,
-      appointmentDate,
-      appointmentTime,
-      status: { $in: ['scheduled', 'confirmed'] },
-    });
-
-    if (existingAppointment) {
-      return NextResponse.json({ error: 'Time slot already booked' }, { status: 409 });
-    }
-
-    const appointment = await Appointment.create({
-      patientId: auth.userId,
-      doctorId,
-      appointmentDate: new Date(appointmentDate),
-      appointmentTime,
-      reason,
-      notes,
-      status: 'scheduled',
-      createdAt: new Date(),
-    });
-
-    await appointment.populate('doctorId', 'name specialty clinic');
-
-    return NextResponse.json({ success: true, data: appointment }, { status: 201 });
-  } catch (error) {
-    console.error('Appointment creation error:', error);
-    return NextResponse.json({ error: 'Failed to create appointment' }, { status: 500 });
-  }
-}
-
-export async function PATCH(req: NextRequest) {
-  try {
-    const auth = await verifyAuth(req);
-    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    await connectDB();
-    const body = await req.json();
+    const body = await request.json();
     const { appointmentId, status } = body;
 
     if (!appointmentId || !status) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      throw new AppError(400, 'appointmentId and status are required');
     }
 
-    const appointment = await Appointment.findById(appointmentId);
-    if (!appointment) {
-      return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
-    }
+    const db = getDb();
 
-    // Only doctor or patient can modify their appointment
-    const isAuthorized = auth.userId === appointment.doctorId.toString() || 
-                        auth.userId === appointment.patientId.toString();
-    if (!isAuthorized) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const updateAppointment = db.prepare('UPDATE appointments SET status = ? WHERE id = ?');
+    updateAppointment.run(status, appointmentId);
 
-    appointment.status = status;
-    await appointment.save();
-
-    return NextResponse.json({ success: true, data: appointment });
+    return NextResponse.json({ message: 'Appointment updated' }, { status: 200 });
   } catch (error) {
-    console.error('Appointment update error:', error);
-    return NextResponse.json({ error: 'Failed to update appointment' }, { status: 500 });
+    return handleError(error);
   }
 }
