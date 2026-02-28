@@ -1,4 +1,6 @@
-import { getDb } from '@/lib/db-sqlite';
+'use server';
+
+import { getDbConnection } from '@/lib/db-mysql';
 import { NextRequest, NextResponse } from 'next/server';
 import { handleError, AppError } from '@/lib/api';
 import crypto from 'crypto';
@@ -6,23 +8,23 @@ import crypto from 'crypto';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { patientId, doctorId, appointmentDate, notes } = body;
+    const patientId = request.headers.get('x-user-id');
 
-    if (!patientId || !doctorId || !appointmentDate) {
-      throw new AppError(400, 'Missing required fields');
+    if (!patientId) {
+      throw new AppError(401, 'User ID not found');
     }
 
-    const db = getDb();
+    const conn = await getDbConnection();
 
     const appointmentId = crypto.randomUUID();
-    const insertAppointment = db.prepare(`
-      INSERT INTO appointments (id, patientId, doctorId, appointmentDate, status, notes)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
 
-    insertAppointment.run(appointmentId, patientId, doctorId, appointmentDate, 'pending', notes || '');
+    await conn.execute(
+      `INSERT INTO appointments (id, patientId, doctorId, appointmentDate, status)
+       VALUES (?, ?, ?, ?, 'scheduled')`,
+      [appointmentId, patientId, body.doctorId, body.appointmentDate]
+    );
 
-    return NextResponse.json({ id: appointmentId, message: 'Appointment booked' }, { status: 201 });
+    return NextResponse.json({ success: true, appointmentId }, { status: 201 });
   } catch (error) {
     return handleError(error);
   }
@@ -30,48 +32,42 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const patientId = searchParams.get('patientId');
-    const doctorId = searchParams.get('doctorId');
-    const status = searchParams.get('status');
+    const userId = request.headers.get('x-user-id');
+    const role = request.headers.get('x-user-role');
 
-    if (!patientId && !doctorId) {
-      throw new AppError(400, 'Either patientId or doctorId is required');
+    if (!userId) {
+      throw new AppError(401, 'User ID not found');
     }
 
-    const db = getDb();
+    const conn = await getDbConnection();
 
-    let query = `
-      SELECT a.*, 
-             p.fullName as patientName, 
-             d.specialty, 
-             u.fullName as doctorName
-      FROM appointments a
-      JOIN users p ON a.patientId = p.id
-      JOIN doctors d ON a.doctorId = d.id
-      JOIN users u ON d.userId = u.id
-    `;
+    let appointments;
 
-    let params: any[] = [];
-
-    if (patientId) {
-      query += ' WHERE a.patientId = ?';
-      params.push(patientId);
-    } else if (doctorId) {
-      query += ' WHERE a.doctorId = ?';
-      params.push(doctorId);
+    if (role === 'patient') {
+      const [result] = await conn.execute(
+        `SELECT a.*, d.*, u.fullName 
+         FROM appointments a
+         JOIN doctors d ON a.doctorId = d.id
+         JOIN users u ON d.userId = u.id
+         WHERE a.patientId = ?
+         ORDER BY a.appointmentDate DESC`,
+        [userId]
+      ) as any;
+      appointments = result;
+    } else if (role === 'doctor') {
+      const [result] = await conn.execute(
+        `SELECT a.*, u.fullName, u.email
+         FROM appointments a
+         JOIN doctors d ON a.doctorId = d.id
+         JOIN users u ON a.patientId = u.id
+         WHERE d.userId = ?
+         ORDER BY a.appointmentDate DESC`,
+        [userId]
+      ) as any;
+      appointments = result;
     }
 
-    if (status) {
-      query += patientId || doctorId ? ' AND a.status = ?' : ' WHERE a.status = ?';
-      params.push(status);
-    }
-
-    query += ' ORDER BY a.appointmentDate DESC';
-
-    const appointments = db.prepare(query).all(...params);
-
-    return NextResponse.json({ appointments }, { status: 200 });
+    return NextResponse.json({ appointments });
   } catch (error) {
     return handleError(error);
   }
@@ -80,18 +76,14 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
-    const { appointmentId, status } = body;
+    const conn = await getDbConnection();
 
-    if (!appointmentId || !status) {
-      throw new AppError(400, 'appointmentId and status are required');
-    }
+    await conn.execute(
+      `UPDATE appointments SET status = ? WHERE id = ?`,
+      [body.status, body.appointmentId]
+    );
 
-    const db = getDb();
-
-    const updateAppointment = db.prepare('UPDATE appointments SET status = ? WHERE id = ?');
-    updateAppointment.run(status, appointmentId);
-
-    return NextResponse.json({ message: 'Appointment updated' }, { status: 200 });
+    return NextResponse.json({ success: true });
   } catch (error) {
     return handleError(error);
   }

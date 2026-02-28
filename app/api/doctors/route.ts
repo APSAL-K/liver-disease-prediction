@@ -1,59 +1,79 @@
-import { getDb } from '@/lib/db-sqlite';
+'use server';
+
+import { getDbConnection } from '@/lib/db-mysql';
 import { NextRequest, NextResponse } from 'next/server';
 import { handleError, AppError } from '@/lib/api';
 import crypto from 'crypto';
 
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { userId, specialty, qualifications, clinicName, clinicAddress, consultationFee, experience } = body;
+    const specialty = request.nextUrl.searchParams.get('specialty');
+    const conn = await getDbConnection();
 
-    if (!userId) {
-      throw new AppError(400, 'User ID is required');
+    let query = `
+      SELECT d.*, u.fullName, u.email 
+      FROM doctors d
+      JOIN users u ON d.userId = u.id
+      WHERE u.role = 'doctor'
+    `;
+
+    const params: any[] = [];
+
+    if (specialty) {
+      query += ` AND d.specialty LIKE ?`;
+      params.push(`%${specialty}%`);
     }
 
-    const db = getDb();
+    query += ` ORDER BY d.rating DESC LIMIT 50`;
 
-    // Check if doctor already exists for this user
-    const existingDoctor = db.prepare('SELECT id FROM doctors WHERE userId = ?').get(userId);
-    if (existingDoctor) {
-      throw new AppError(400, 'Doctor profile already exists for this user');
-    }
+    const [doctors] = await conn.execute(query, params) as any;
 
-    const doctorId = crypto.randomUUID();
-    const insertDoctor = db.prepare(`
-      INSERT INTO doctors (id, userId, specialty, qualifications, clinicName, clinicAddress, consultationFee, experience)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    insertDoctor.run(doctorId, userId, specialty, qualifications, clinicName, clinicAddress, consultationFee || 500, experience || 0);
-
-    return NextResponse.json({ id: doctorId, message: 'Doctor profile created' }, { status: 201 });
+    return NextResponse.json({ doctors });
   } catch (error) {
     return handleError(error);
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const specialty = searchParams.get('specialty');
+    const body = await request.json();
+    const doctorId = request.headers.get('x-user-id');
 
-    const db = getDb();
-
-    let query = 'SELECT d.*, u.fullName FROM doctors d JOIN users u ON d.userId = u.id';
-    let params: any[] = [];
-
-    if (specialty) {
-      query += ' WHERE d.specialty LIKE ?';
-      params.push(`%${specialty}%`);
+    if (!doctorId) {
+      throw new AppError(401, 'User ID not found');
     }
 
-    query += ' ORDER BY d.rating DESC';
+    const conn = await getDbConnection();
 
-    const doctors = db.prepare(query).all(...params);
+    // Check if doctor profile already exists
+    const [existingDoctors] = await conn.execute(
+      'SELECT id FROM doctors WHERE userId = ?',
+      [doctorId]
+    ) as any;
 
-    return NextResponse.json({ doctors }, { status: 200 });
+    if (existingDoctors.length > 0) {
+      throw new AppError(400, 'Doctor profile already exists');
+    }
+
+    const id = crypto.randomUUID();
+
+    await conn.execute(
+      `INSERT INTO doctors (id, userId, specialty, qualifications, experience, clinicName, clinicAddress, phone, consultationFee)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        doctorId,
+        body.specialty,
+        body.qualifications,
+        body.experience,
+        body.clinicName,
+        body.clinicAddress,
+        body.phone,
+        body.consultationFee || 500,
+      ]
+    );
+
+    return NextResponse.json({ success: true, doctorId: id }, { status: 201 });
   } catch (error) {
     return handleError(error);
   }

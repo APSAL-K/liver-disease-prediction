@@ -1,9 +1,11 @@
-import { connectDB } from '@/lib/db';
-import { User } from '@/lib/models/User';
-import { createToken } from '@/lib/auth';
+'use server';
+
+import { getDbConnection } from '@/lib/db-mysql';
+import { createToken, hashPassword, comparePassword } from '@/lib/auth';
 import { registerSchema, loginSchema } from '@/lib/validators';
 import { NextRequest, NextResponse } from 'next/server';
 import { handleError, AppError } from '@/lib/api';
+import crypto from 'crypto';
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,45 +35,57 @@ async function handleRegister(request: NextRequest) {
     );
   }
 
-  await connectDB();
+  try {
+    const conn = await getDbConnection();
 
-  // Check if user already exists
-  const existingUser = await User.findOne({ email: parsed.data.email });
-  if (existingUser) {
-    throw new AppError(400, 'User with this email already exists');
-  }
+    // Check if user already exists
+    const [existingUsers] = await conn.execute(
+      'SELECT id FROM users WHERE email = ?',
+      [parsed.data.email]
+    ) as any;
 
-  // Create new user
-  const user = new User({
-    email: parsed.data.email,
-    password: parsed.data.password,
-    firstName: parsed.data.firstName,
-    lastName: parsed.data.lastName,
-    role: parsed.data.role,
-  });
+    if (existingUsers.length > 0) {
+      throw new AppError(400, 'User with this email already exists');
+    }
 
-  await user.save();
+    // Hash password
+    const hashedPassword = await hashPassword(parsed.data.password);
+    const userId = crypto.randomUUID();
 
-  // Create JWT token
-  const token = createToken({
-    userId: user._id.toString(),
-    email: user.email,
-    role: user.role,
-  });
+    // Create new user
+    await conn.execute(
+      'INSERT INTO users (id, email, password, fullName, role) VALUES (?, ?, ?, ?, ?)',
+      [
+        userId,
+        parsed.data.email,
+        hashedPassword,
+        `${parsed.data.firstName} ${parsed.data.lastName}`,
+        parsed.data.role,
+      ]
+    );
 
-  return NextResponse.json(
-    {
-      token,
-      user: {
-        id: user._id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
+    // Create JWT token
+    const token = createToken({
+      userId,
+      email: parsed.data.email,
+      role: parsed.data.role,
+    });
+
+    return NextResponse.json(
+      {
+        token,
+        user: {
+          id: userId,
+          email: parsed.data.email,
+          fullName: `${parsed.data.firstName} ${parsed.data.lastName}`,
+          role: parsed.data.role,
+        },
       },
-    },
-    { status: 201 }
-  );
+      { status: 201 }
+    );
+  } catch (error) {
+    return handleError(error);
+  }
 }
 
 async function handleLogin(request: NextRequest) {
@@ -85,33 +99,42 @@ async function handleLogin(request: NextRequest) {
     );
   }
 
-  await connectDB();
+  try {
+    const conn = await getDbConnection();
 
-  const user = await User.findOne({ email: parsed.data.email });
-  if (!user) {
-    throw new AppError(401, 'Invalid email or password');
-  }
+    const [users] = await conn.execute(
+      'SELECT * FROM users WHERE email = ?',
+      [parsed.data.email]
+    ) as any;
 
-  const isPasswordValid = await user.comparePassword(parsed.data.password);
-  if (!isPasswordValid) {
-    throw new AppError(401, 'Invalid email or password');
-  }
+    if (users.length === 0) {
+      throw new AppError(401, 'Invalid email or password');
+    }
 
-  // Create JWT token
-  const token = createToken({
-    userId: user._id.toString(),
-    email: user.email,
-    role: user.role,
-  });
+    const user = users[0];
+    const isPasswordValid = await comparePassword(parsed.data.password, user.password);
 
-  return NextResponse.json({
-    token,
-    user: {
-      id: user._id,
+    if (!isPasswordValid) {
+      throw new AppError(401, 'Invalid email or password');
+    }
+
+    // Create JWT token
+    const token = createToken({
+      userId: user.id,
       email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
       role: user.role,
-    },
-  });
+    });
+
+    return NextResponse.json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    return handleError(error);
+  }
 }
