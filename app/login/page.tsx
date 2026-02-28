@@ -4,10 +4,6 @@ import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { setUser, setToken } from '@/lib/redux-store';
 import { cacheStorage } from '@/lib/cache-storage';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from 'sonner';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -17,9 +13,11 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
 
     try {
@@ -41,73 +39,170 @@ export default function LoginPage() {
       cacheStorage.setUser(mockUser);
       cacheStorage.setToken(mockToken);
 
-      toast.success('Logged in successfully!');
       router.push('/dashboard');
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Login failed');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-background to-muted">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl">Liver Disease Prediction</CardTitle>
-          <CardDescription>Sign in to your account</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-2">
-                Email
-              </label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                required
-              />
-            </div>
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '100vh',
+      background: `linear-gradient(to bottom, hsl(var(--background)), hsl(var(--muted)))`,
+      padding: '20px'
+    }}>
+      <div style={{
+        width: '100%',
+        maxWidth: '400px',
+        background: `hsl(var(--card))`,
+        borderRadius: '8px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        border: `1px solid hsl(var(--border))`,
+        padding: '32px'
+      }}>
+        <h1 style={{
+          fontSize: '24px',
+          fontWeight: 'bold',
+          marginBottom: '8px',
+          color: `hsl(var(--foreground))`
+        }}>
+          Liver Disease Prediction
+        </h1>
+        
+        <p style={{
+          fontSize: '14px',
+          color: `hsl(var(--muted-foreground))`,
+          marginBottom: '24px'
+        }}>
+          Sign in to your account
+        </p>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium mb-2">
-                Password
-              </label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-              />
-            </div>
+        <form onSubmit={handleSubmit} style={{ marginBottom: '24px' }}>
+          <div style={{ marginBottom: '16px' }}>
+            <label htmlFor="email" style={{
+              display: 'block',
+              fontSize: '14px',
+              fontWeight: '500',
+              marginBottom: '8px',
+              color: `hsl(var(--foreground))`
+            }}>
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              required
+              style={{
+                width: '100%',
+                padding: '10px',
+                borderRadius: '4px',
+                border: `1px solid hsl(var(--input))`,
+                background: `hsl(var(--input))`,
+                color: `hsl(var(--foreground))`,
+                fontSize: '14px',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
 
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? 'Signing in...' : 'Sign in'}
-            </Button>
-          </form>
+          <div style={{ marginBottom: '16px' }}>
+            <label htmlFor="password" style={{
+              display: 'block',
+              fontSize: '14px',
+              fontWeight: '500',
+              marginBottom: '8px',
+              color: `hsl(var(--foreground))`
+            }}>
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              style={{
+                width: '100%',
+                padding: '10px',
+                borderRadius: '4px',
+                border: `1px solid hsl(var(--input))`,
+                background: `hsl(var(--input))`,
+                color: `hsl(var(--foreground))`,
+                fontSize: '14px',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
 
-          <div className="mt-4 text-center text-sm">
-            <p className="text-muted-foreground">
-              Don't have an account?{' '}
-              <Link href="/signup" className="text-primary hover:underline">
-                Sign up
-              </Link>
+          {error && (
+            <p style={{
+              color: `hsl(var(--destructive))`,
+              fontSize: '14px',
+              marginBottom: '16px'
+            }}>
+              {error}
             </p>
-          </div>
+          )}
 
-          <div className="mt-4 p-3 bg-muted rounded text-xs text-muted-foreground">
-            <p className="font-semibold mb-1">Demo Credentials:</p>
-            <p>Email: demo@example.com</p>
-            <p>Password: anything</p>
-          </div>
-        </CardContent>
-      </Card>
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: '100%',
+              padding: '10px',
+              borderRadius: '4px',
+              background: `hsl(var(--primary))`,
+              color: `hsl(var(--primary-foreground))`,
+              fontSize: '14px',
+              fontWeight: '500',
+              border: 'none',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.6 : 1
+            }}
+          >
+            {loading ? 'Signing in...' : 'Sign in'}
+          </button>
+        </form>
+
+        <div style={{
+          textAlign: 'center',
+          fontSize: '14px',
+          color: `hsl(var(--muted-foreground))`,
+          marginBottom: '16px'
+        }}>
+          <p>
+            Don't have an account?{' '}
+            <Link href="/signup" style={{
+              color: `hsl(var(--primary))`,
+              textDecoration: 'none',
+              fontWeight: '500'
+            }}>
+              Sign up
+            </Link>
+          </p>
+        </div>
+
+        <div style={{
+          padding: '12px',
+          background: `hsl(var(--muted))`,
+          borderRadius: '4px',
+          fontSize: '12px',
+          color: `hsl(var(--muted-foreground))`
+        }}>
+          <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>Demo Credentials:</p>
+          <p>Email: demo@example.com</p>
+          <p>Password: anything</p>
+        </div>
+      </div>
     </div>
   );
 }
