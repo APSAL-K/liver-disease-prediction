@@ -49,49 +49,55 @@ export default function LoginPage() {
 
   return (
     <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--secondary))/.1 100%)',
+      padding: '20px',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      minHeight: '100vh',
-      background: `linear-gradient(to bottom, hsl(var(--background)), hsl(var(--muted)))`,
-      padding: '20px'
+      animation: 'fadeIn 0.5s ease-out',
     }}>
       <div style={{
         width: '100%',
-        maxWidth: '400px',
+        maxWidth: '420px',
         background: `hsl(var(--card))`,
-        borderRadius: '8px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        borderRadius: '16px',
         border: `1px solid hsl(var(--border))`,
-        padding: '32px'
+        boxShadow: 'var(--shadow-lg)',
+        backdropFilter: 'blur(10px)',
+        padding: '48px 32px',
+        animation: 'scaleIn 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
       }}>
         <h1 style={{
-          fontSize: '24px',
-          fontWeight: 'bold',
+          fontSize: '28px',
+          fontWeight: '700',
           marginBottom: '8px',
-          color: `hsl(var(--foreground))`
+          color: `hsl(var(--foreground))`,
+          letterSpacing: '-0.02em',
         }}>
-          Liver Disease Prediction
+          Sign In
         </h1>
         
         <p style={{
           fontSize: '14px',
           color: `hsl(var(--muted-foreground))`,
-          marginBottom: '24px'
+          marginBottom: '32px',
         }}>
-          Sign in to your account
+          Liver Disease Prediction System
         </p>
 
         <form onSubmit={handleSubmit} style={{ marginBottom: '24px' }}>
-          <div style={{ marginBottom: '16px' }}>
+          <div style={{ marginBottom: '20px' }}>
             <label htmlFor="email" style={{
               display: 'block',
-              fontSize: '14px',
-              fontWeight: '500',
+              fontSize: '13px',
+              fontWeight: '600',
               marginBottom: '8px',
-              color: `hsl(var(--foreground))`
+              color: `hsl(var(--foreground))`,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
             }}>
-              Email
+              Email Address
             </label>
             <input
               id="email"
@@ -102,24 +108,36 @@ export default function LoginPage() {
               required
               style={{
                 width: '100%',
-                padding: '10px',
-                borderRadius: '4px',
-                border: `1px solid hsl(var(--input))`,
+                padding: '12px 14px',
+                borderRadius: '8px',
+                border: `1px solid hsl(var(--border))`,
                 background: `hsl(var(--input))`,
                 color: `hsl(var(--foreground))`,
                 fontSize: '14px',
-                boxSizing: 'border-box'
+                boxSizing: 'border-box',
+                transition: 'all 0.2s ease',
+                backdropFilter: 'blur(10px)',
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = `hsl(var(--primary))`;
+                e.currentTarget.style.boxShadow = 'var(--shadow)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = `hsl(var(--border))`;
+                e.currentTarget.style.boxShadow = 'none';
               }}
             />
           </div>
 
-          <div style={{ marginBottom: '16px' }}>
+          <div style={{ marginBottom: '32px' }}>
             <label htmlFor="password" style={{
               display: 'block',
-              fontSize: '14px',
-              fontWeight: '500',
+              fontSize: '13px',
+              fontWeight: '600',
               marginBottom: '8px',
-              color: `hsl(var(--foreground))`
+              color: `hsl(var(--foreground))`,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
             }}>
               Password
             </label>
@@ -132,13 +150,23 @@ export default function LoginPage() {
               required
               style={{
                 width: '100%',
-                padding: '10px',
-                borderRadius: '4px',
-                border: `1px solid hsl(var(--input))`,
+                padding: '12px 14px',
+                borderRadius: '8px',
+                border: `1px solid hsl(var(--border))`,
                 background: `hsl(var(--input))`,
                 color: `hsl(var(--foreground))`,
                 fontSize: '14px',
-                boxSizing: 'border-box'
+                boxSizing: 'border-box',
+                transition: 'all 0.2s ease',
+                backdropFilter: 'blur(10px)',
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = `hsl(var(--primary))`;
+                e.currentTarget.style.boxShadow = 'var(--shadow)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = `hsl(var(--border))`;
+                e.currentTarget.style.boxShadow = 'none';
               }}
             />
           </div>
@@ -146,8 +174,12 @@ export default function LoginPage() {
           {error && (
             <p style={{
               color: `hsl(var(--destructive))`,
-              fontSize: '14px',
-              marginBottom: '16px'
+              fontSize: '13px',
+              marginBottom: '16px',
+              padding: '10px 12px',
+              background: `hsl(var(--destructive)/.1)`,
+              borderRadius: '6px',
+              border: `1px solid hsl(var(--destructive)/.3)`,
             }}>
               {error}
             </p>
@@ -158,49 +190,67 @@ export default function LoginPage() {
             disabled={loading}
             style={{
               width: '100%',
-              padding: '10px',
-              borderRadius: '4px',
-              background: `hsl(var(--primary))`,
+              padding: '12px',
+              borderRadius: '8px',
+              background: `linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-dark)) 100%)`,
               color: `hsl(var(--primary-foreground))`,
               fontSize: '14px',
-              fontWeight: '500',
+              fontWeight: '600',
               border: 'none',
               cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.6 : 1
+              opacity: loading ? 0.6 : 1,
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              boxShadow: 'var(--shadow)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+            }}
+            onMouseEnter={(e) => {
+              if (!loading) {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = 'var(--shadow)';
             }}
           >
-            {loading ? 'Signing in...' : 'Sign in'}
+            {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 
         <div style={{
           textAlign: 'center',
-          fontSize: '14px',
+          fontSize: '13px',
           color: `hsl(var(--muted-foreground))`,
-          marginBottom: '16px'
+          marginBottom: '24px',
+          paddingBottom: '24px',
+          borderBottom: `1px solid hsl(var(--border))`,
         }}>
           <p>
             Don't have an account?{' '}
             <Link href="/signup" style={{
               color: `hsl(var(--primary))`,
+              fontWeight: '600',
               textDecoration: 'none',
-              fontWeight: '500'
             }}>
-              Sign up
+              Create one
             </Link>
           </p>
         </div>
 
         <div style={{
-          padding: '12px',
-          background: `hsl(var(--muted))`,
-          borderRadius: '4px',
+          padding: '16px',
+          background: `hsl(var(--muted)/.3)`,
+          borderRadius: '8px',
+          border: `1px solid hsl(var(--border))`,
           fontSize: '12px',
-          color: `hsl(var(--muted-foreground))`
+          color: `hsl(var(--muted-foreground))`,
+          lineHeight: '1.6',
         }}>
-          <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>Demo Credentials:</p>
-          <p>Email: demo@example.com</p>
-          <p>Password: anything</p>
+          <p style={{ fontWeight: '600', marginBottom: '8px' }}>Demo Credentials:</p>
+          <p>📧 Email: demo@example.com</p>
+          <p>🔐 Password: anything</p>
         </div>
       </div>
     </div>
