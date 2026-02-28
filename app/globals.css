@@ -27,15 +27,6 @@
     --chart-4: oklch(0.45 0.1 270);
     --chart-5: oklch(0.55 0.12 120);
     --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
-    
     --font-sans: 'Geist', 'Geist Fallback';
     --font-mono: 'Geist Mono', 'Geist Mono Fallback';
     color-scheme: light;
@@ -66,14 +57,6 @@
     --chart-3: oklch(0.7 0.18 40);
     --chart-4: oklch(0.5 0.12 270);
     --chart-5: oklch(0.65 0.15 120);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(0.269 0 0);
-    --sidebar-ring: oklch(0.439 0 0);
     color-scheme: dark;
   }
 }
