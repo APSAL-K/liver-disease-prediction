@@ -27,6 +27,11 @@ async function runCommand(command, description) {
   try {
     log(`Running: ${description}`);
     log(`Command: ${command}`);
+    log(`In directory: ${projectRoot}`);
+    
+    // Change to project directory first
+    process.chdir(projectRoot);
+    
     execSync(command, {
       cwd: projectRoot,
       stdio: 'inherit',
@@ -52,8 +57,8 @@ async function main() {
     log('This may take a few minutes...');
     
     const installSuccess = await runCommand(
-      'pnpm install',
-      'Installing npm packages with pnpm'
+      'npm install',
+      'Installing npm packages'
     );
 
     if (!installSuccess) {
@@ -70,7 +75,7 @@ async function main() {
     log('Initializing MySQL tables...');
     
     const dbSuccess = await runCommand(
-      'pnpm run setup-db',
+      'npm run setup-db',
       'Initializing MySQL database'
     );
 
@@ -87,7 +92,7 @@ async function main() {
     log('This may take a minute...');
     
     const buildSuccess = await runCommand(
-      'pnpm run build',
+      'npm run build',
       'Building Next.js production build'
     );
 
@@ -99,7 +104,7 @@ async function main() {
     logSuccess('Setup Complete!');
     log('');
     log('Next steps:');
-    log('1. Start development server: pnpm dev');
+    log('1. Start development server: npm run dev');
     log('2. Open http://localhost:3000 in your browser');
     log('');
     logSuccess('Ready to run!');
