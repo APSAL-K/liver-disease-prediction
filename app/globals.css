@@ -18,24 +18,34 @@
   --ring: 210 100% 50%;
 }
 
-.dark {
-  --background: 0 0% 8%;
-  --foreground: 0 0% 100%;
-  --card: 0 0% 12%;
-  --card-foreground: 0 0% 100%;
-  --primary: 210 100% 60%;
-  --primary-foreground: 0 0% 8%;
-  --secondary: 210 40% 96%;
-  --secondary-foreground: 210 100% 50%;
-  --muted: 215 27% 33%;
-  --muted-foreground: 215 16% 90%;
-  --accent: 210 100% 60%;
-  --accent-foreground: 0 0% 8%;
+body {
+  color-scheme: light;
+}
+
+html.dark,
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+html.dark,
+html[data-theme="dark"] {
+  --background: 0 0% 5%;
+  --foreground: 0 0% 98%;
+  --card: 0 0% 10%;
+  --card-foreground: 0 0% 98%;
+  --primary: 210 100% 55%;
+  --primary-foreground: 0 0% 5%;
+  --secondary: 210 40% 30%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 215 27% 25%;
+  --muted-foreground: 215 16% 85%;
+  --accent: 210 100% 55%;
+  --accent-foreground: 0 0% 5%;
   --destructive: 0 84% 60%;
-  --destructive-foreground: 0 0% 8%;
-  --border: 215 27% 24%;
-  --input: 215 27% 24%;
-  --ring: 210 100% 60%;
+  --destructive-foreground: 0 0% 5%;
+  --border: 215 27% 20%;
+  --input: 215 27% 18%;
+  --ring: 210 100% 55%;
 }
 
 * {
@@ -48,6 +58,7 @@
 html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -56,15 +67,83 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
-  line-height: 1.5;
+  line-height: 1.6;
+  font-size: 16px;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 a {
   color: hsl(var(--primary));
   text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+a:hover {
+  opacity: 0.8;
 }
 
 button {
   font-family: inherit;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+input,
+textarea,
+select {
+  background-color: hsl(var(--input));
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 3px hsl(var(--ring) / 0.1);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: 32px;
+}
+
+h2 {
+  font-size: 24px;
+}
+
+h3 {
+  font-size: 20px;
+}
+
+p {
+  line-height: 1.6;
+  color: hsl(var(--foreground));
+}
+
+code {
+  background-color: hsl(var(--muted));
+  color: hsl(var(--foreground));
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 14px;
+}
+
+.dark {
+  color-scheme: dark;
 }
