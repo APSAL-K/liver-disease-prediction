@@ -1,18 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/lib/redux-store';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Heart, Users, Shield, TrendingUp, Brain, Zap } from 'lucide-react';
 import Link from 'next/link';
 
 export default function HomePage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    setIsLoggedIn(!!token);
-  }, []);
+  const { isLoggedIn } = useSelector((state: RootState) => state.auth);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -33,10 +29,10 @@ export default function HomePage() {
             ) : (
               <>
                 <Button variant="outline" asChild>
-                  <Link href="/auth/login">Login</Link>
+                  <Link href="/login">Login</Link>
                 </Button>
                 <Button asChild>
-                  <Link href="/auth/signup">Sign Up</Link>
+                  <Link href="/signup">Sign Up</Link>
                 </Button>
               </>
             )}
@@ -55,10 +51,10 @@ export default function HomePage() {
           </p>
           <div className="flex gap-4 justify-center pt-4">
             <Button size="lg" asChild>
-              <Link href="/auth/signup">Get Started</Link>
+              <Link href="/signup">Get Started</Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
-              <Link href="/auth/login">Sign In</Link>
+              <Link href="/login">Sign In</Link>
             </Button>
           </div>
         </div>
@@ -152,7 +148,7 @@ export default function HomePage() {
             Get your AI-powered liver disease risk assessment in just a few minutes.
           </p>
           <Button size="lg" asChild>
-            <Link href="/auth/signup">Begin Assessment</Link>
+            <Link href="/signup">Begin Assessment</Link>
           </Button>
         </div>
       </section>
