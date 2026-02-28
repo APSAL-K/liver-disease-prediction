@@ -1,7 +1,8 @@
 import jwt from 'jsonwebtoken';
+import bcryptjs from 'bcryptjs';
 import { NextRequest, NextResponse } from 'next/server';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production-12345';
 
 export interface JWTPayload {
   userId: string;
@@ -21,6 +22,16 @@ export function verifyToken(token: string): JWTPayload | null {
     return null;
   }
 }
+
+// Password hashing functions
+export const hashPassword = (password: string): Promise<string> => {
+  const salt = bcryptjs.genSaltSync(10);
+  return Promise.resolve(bcryptjs.hashSync(password, salt));
+};
+
+export const comparePassword = (password: string, hashedPassword: string): Promise<boolean> => {
+  return Promise.resolve(bcryptjs.compareSync(password, hashedPassword));
+};
 
 export function getTokenFromRequest(request: NextRequest): string | null {
   const authHeader = request.headers.get('authorization');

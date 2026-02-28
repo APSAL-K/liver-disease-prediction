@@ -1,5 +1,3 @@
-'use server';
-
 import { getDbConnection } from '@/lib/db-mysql';
 import { createToken, hashPassword, comparePassword } from '@/lib/auth';
 import { registerSchema, loginSchema } from '@/lib/validators';

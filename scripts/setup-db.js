@@ -10,7 +10,13 @@
 const mysql = require('mysql2/promise');
 const fs = require('fs');
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../.env.local') });
+
+// Safely load env variables
+try {
+  require('dotenv').config({ path: path.join(__dirname, '../.env.local') });
+} catch (e) {
+  console.log('[DB Setup] Warning: Could not load .env.local');
+}
 
 const DB_CONFIG = {
   host: process.env.DB_HOST || '192.168.1.101',
@@ -148,16 +154,31 @@ async function setupDatabase() {
   } catch (error) {
     console.error('[DB Setup] ✗ Fatal error:', error.message);
     if (error.code) console.error('[DB Setup] Error code:', error.code);
-    process.exit(1);
+    console.error('[DB Setup] Note: Run this script after pnpm install with proper .env.local');
+    // Don't exit with code 1 during npm install - allow it to continue
+    if (process.env.npm_lifecycle_event === 'postinstall') {
+      console.log('[DB Setup] Continuing... Database setup will be done on first run');
+      process.exit(0);
+    } else {
+      process.exit(1);
+    }
   } finally {
     if (connection) {
-      await connection.end();
+      try {
+        await connection.end();
+      } catch (e) {
+        // Ignore cleanup errors
+      }
     }
   }
 }
 
-// Run setup
+// Run setup - but allow failures during postinstall
 setupDatabase().catch((err) => {
   console.error('[DB Setup] Uncaught error:', err);
-  process.exit(1);
+  if (process.env.npm_lifecycle_event === 'postinstall') {
+    process.exit(0); // Don't fail npm install
+  } else {
+    process.exit(1);
+  }
 });
