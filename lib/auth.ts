@@ -23,14 +23,15 @@ export function verifyToken(token: string): JWTPayload | null {
   }
 }
 
-export async function hashPassword(password: string): Promise<string> {
-  const salt = await bcryptjs.genSalt(10);
-  return bcryptjs.hash(password, salt);
-}
+// Password hashing functions
+export const hashPassword = (password: string): Promise<string> => {
+  const salt = bcryptjs.genSaltSync(10);
+  return Promise.resolve(bcryptjs.hashSync(password, salt));
+};
 
-export async function comparePassword(password: string, hashedPassword: string): Promise<boolean> {
-  return bcryptjs.compare(password, hashedPassword);
-}
+export const comparePassword = (password: string, hashedPassword: string): Promise<boolean> => {
+  return Promise.resolve(bcryptjs.compareSync(password, hashedPassword));
+};
 
 export function getTokenFromRequest(request: NextRequest): string | null {
   const authHeader = request.headers.get('authorization');
