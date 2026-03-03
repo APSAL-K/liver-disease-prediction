@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/redux-store';
 import Link from 'next/link';
@@ -8,15 +8,64 @@ import { useRouter } from 'next/navigation';
 
 export default function PatientDashboard() {
   const { user } = useSelector((state: RootState) => state.auth);
+  const { predictions } = useSelector((state: RootState) => state.predictions);
   const router = useRouter();
   const [selectedTab, setSelectedTab] = useState('overview');
 
+  // Redirect unauthenticated users after initial render to avoid setState during render
+  useEffect(() => {
+    if (!user) {
+      router.replace('/auth/login');
+    }
+  }, [user, router]);
+
   if (!user) {
-    router.push('/login');
-    return null;
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'hsl(var(--background))',
+          color: 'hsl(var(--muted-foreground))',
+        }}
+      >
+        Redirecting to login…
+      </div>
+    );
   }
 
-  const lastPrediction = JSON.parse(localStorage.getItem('lastPrediction') || '{}');
+  const storedLastPrediction = JSON.parse(localStorage.getItem('lastPrediction') || '{}');
+
+  const latestPrediction =
+    predictions && predictions.length > 0 ? predictions[0] : null;
+
+  const lastPrediction = latestPrediction
+    ? {
+        level: latestPrediction.hasDisease ? 'Disease' : 'No Disease',
+        severity: latestPrediction.riskLevel,
+        timestamp: new Date().toISOString(),
+        color:
+          latestPrediction.riskLevel === 'High'
+            ? '#ef4444'
+            : latestPrediction.riskLevel === 'Medium'
+            ? '#f59e0b'
+            : latestPrediction.riskLevel === 'Low'
+            ? '#10b981'
+            : '#06b6d4',
+        formData: {
+          totalBilirubin: latestPrediction.medicalMetrics?.totalBilirubin,
+          platelets: latestPrediction.medicalMetrics?.platelets,
+          albumin: latestPrediction.medicalMetrics?.albumin,
+        },
+      }
+    : storedLastPrediction;
+
+  const hasDisease =
+    lastPrediction &&
+    (lastPrediction.level === 'Disease' ||
+      ['High', 'Medium', 'Low'].includes(lastPrediction.severity));
 
   const mockUpcomingAppointments = [
     { id: 1, doctor: 'Dr. Sarah Johnson', date: '2024-03-15', time: '10:00 AM', type: 'Liver Check-up' },
@@ -123,13 +172,16 @@ export default function PatientDashboard() {
       </div>
 
       <div style={gridStyle}>
-        {lastPrediction.level && (
+        {lastPrediction && lastPrediction.level && (
           <div style={riskCardStyle}>
             <h3 style={{ fontSize: '14px', opacity: 0.9, marginBottom: '12px' }}>Current Risk Level</h3>
             <div style={{ fontSize: '48px', fontWeight: '700', marginBottom: '8px' }}>
               {lastPrediction.level}
             </div>
-            <p style={{ opacity: 0.9 }}>{lastPrediction.severity} Risk</p>
+            <p style={{ opacity: 0.9, marginBottom: '8px' }}>{lastPrediction.severity} Risk</p>
+            <p style={{ opacity: 0.9, fontSize: '14px' }}>
+              Disease detected: <strong>{hasDisease ? 'Yes' : 'No'}</strong>
+            </p>
           </div>
         )}
 
@@ -140,15 +192,15 @@ export default function PatientDashboard() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
               <span>Total Bilirubin</span>
-              <span style={{ fontWeight: '600' }}>{lastPrediction.formData?.totalBilirubin || '--'} mg/dL</span>
+              <span style={{ fontWeight: '600' }}>{lastPrediction?.formData?.totalBilirubin || '--'} mg/dL</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', paddingTop: '8px', borderTop: `1px solid hsl(var(--border))` }}>
               <span>Platelets</span>
-              <span style={{ fontWeight: '600' }}>{lastPrediction.formData?.platelets || '--'} K/L</span>
+              <span style={{ fontWeight: '600' }}>{lastPrediction?.formData?.platelets || '--'} K/L</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', paddingTop: '8px', borderTop: `1px solid hsl(var(--border))` }}>
               <span>Albumin</span>
-              <span style={{ fontWeight: '600' }}>{lastPrediction.formData?.albumin || '--'} g/dL</span>
+              <span style={{ fontWeight: '600' }}>{lastPrediction?.formData?.albumin || '--'} g/dL</span>
             </div>
           </div>
         </div>
@@ -158,7 +210,7 @@ export default function PatientDashboard() {
             Quick Actions
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <Link href="/health-assessment" style={{
+            <Link href="/dashboard/patient/health-assessment" style={{
               padding: '10px 14px',
               background: `hsl(var(--primary))`,
               color: `hsl(var(--primary-foreground))`,

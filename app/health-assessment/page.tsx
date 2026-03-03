@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { setPredictions } from '@/lib/redux-store';
+import { cacheStorage } from '@/lib/cache-storage';
 
 export default function HealthAssessmentPage() {
   const dispatch = useDispatch();
@@ -57,19 +59,56 @@ export default function HealthAssessmentPage() {
 
     setTimeout(() => {
       const riskResult = calculateRiskLevel();
+
+      const prediction = {
+        id: `local-${Date.now()}`,
+        riskLevel: riskResult.level === 'No Disease' ? 'None' : riskResult.level,
+        riskScore: 0,
+        recommendations: [],
+        medicalMetrics: {
+          totalBilirubin: parseFloat(formData.totalBilirubin) || 0,
+          alkalinePhosphatase: parseFloat(formData.alkalinePhosphatase) || 0,
+          alamineAminotransferase: parseFloat(formData.alamineAminotransferase) || 0,
+          aspartateAminotransferase: parseFloat(formData.aspartateAminotransferase) || 0,
+          platelets: parseFloat(formData.platelets) || 0,
+          albumin: parseFloat(formData.albumin) || 0,
+        },
+        hasDisease: riskResult.level !== 'No Disease',
+      };
+
+      // Local page result
       setResult({
         ...riskResult,
         timestamp: new Date().toISOString(),
         formData,
       });
+
+      // Store in Redux and cacheStorage
+      dispatch(setPredictions([prediction]));
+      cacheStorage.setPredictions([prediction]);
+
+      // Mirror to dashboard "lastPrediction" shape
+      const lastPrediction = {
+        level: prediction.hasDisease ? 'Disease' : 'No Disease',
+        severity: riskResult.severity,
+        timestamp: new Date().toISOString(),
+        color: riskResult.color,
+        formData: {
+          totalBilirubin: formData.totalBilirubin,
+          platelets: formData.platelets,
+          albumin: formData.albumin,
+        },
+      };
+
+      localStorage.setItem('lastPrediction', JSON.stringify(lastPrediction));
+
       setStep(2);
       setLoading(false);
     }, 1500);
   };
 
   const savePrediction = () => {
-    localStorage.setItem('lastPrediction', JSON.stringify(result));
-    router.push('/dashboard');
+    router.push('/dashboard/patient');
   };
 
   const containerStyle: React.CSSProperties = {

@@ -72,6 +72,10 @@ export default function SignupPage() {
       cacheStorage.setUser(mockUser);
       cacheStorage.setToken(mockToken);
 
+      // Also store in plain localStorage for auth hook / API
+      localStorage.setItem('token', mockToken);
+      localStorage.setItem('user', JSON.stringify(mockUser));
+
       router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Signup failed');
@@ -136,7 +140,7 @@ export default function SignupPage() {
                   fontSize: '18px',
                   fontWeight: '600',
                   marginBottom: '24px',
-                  color: `hsl(var(--foreground))`
+                  color: "white"
                 }}>
                   Create Your Account
                 </h2>
@@ -147,7 +151,7 @@ export default function SignupPage() {
                     fontSize: '13px',
                     fontWeight: '500',
                     marginBottom: '8px',
-                    color: `hsl(var(--foreground))`
+                    color: "white"
                   }}>
                     Full Name
                   </label>
@@ -178,7 +182,7 @@ export default function SignupPage() {
                     fontSize: '13px',
                     fontWeight: '500',
                     marginBottom: '8px',
-                    color: `hsl(var(--foreground))`
+                    color: "white"
                   }}>
                     Email Address
                   </label>
@@ -239,7 +243,7 @@ export default function SignupPage() {
                   fontSize: '18px',
                   fontWeight: '600',
                   marginBottom: '24px',
-                  color: `hsl(var(--foreground))`
+                  color: "white"
                 }}>
                   Set Your Password
                 </h2>
@@ -250,7 +254,7 @@ export default function SignupPage() {
                     fontSize: '13px',
                     fontWeight: '500',
                     marginBottom: '8px',
-                    color: `hsl(var(--foreground))`
+                    color: "white"
                   }}>
                     Password
                   </label>
@@ -288,7 +292,7 @@ export default function SignupPage() {
                     fontSize: '13px',
                     fontWeight: '500',
                     marginBottom: '8px',
-                    color: `hsl(var(--foreground))`
+                    color: "white"
                   }}>
                     Confirm Password
                   </label>
@@ -341,7 +345,7 @@ export default function SignupPage() {
                       padding: '12px',
                       borderRadius: '8px',
                       background: `hsl(var(--muted))`,
-                      color: `hsl(var(--foreground))`,
+                      color: "white",
                       fontSize: '14px',
                       fontWeight: '600',
                       border: 'none',

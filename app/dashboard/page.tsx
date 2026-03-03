@@ -15,8 +15,22 @@ export default function DashboardPage() {
   const { user, isLoggedIn } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
-    if (!isLoggedIn && !cacheStorage.getToken()) {
-      router.push('/login');
+    const cachedUser = cacheStorage.getUser();
+    const cachedToken = cacheStorage.getToken();
+
+    if (cachedUser && cachedToken) {
+      if (cachedUser.role === 'patient') {
+        router.replace('/dashboard/patient');
+      } else if (cachedUser.role === 'doctor') {
+        router.replace('/dashboard/doctor');
+      } else {
+        router.replace('/dashboard/admin');
+      }
+      return;
+    }
+
+    if (!isLoggedIn) {
+      router.replace('/auth/login');
     }
   }, [isLoggedIn, router]);
 
@@ -28,8 +42,8 @@ export default function DashboardPage() {
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Loading...</p>
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <p className="text-muted-foreground">Redirecting to your dashboard...</p>
       </div>
     );
   }
@@ -63,13 +77,15 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Health Assessment</CardTitle>
+            <CardTitle className="text-lg">Health Assessment</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
                 Take a health assessment to get AI-powered predictions.
               </p>
-              <Button className="w-full">Start Assessment</Button>
+              <Link href="/dashboard/patient/health-assessment">
+                <Button className="w-full">Start Assessment</Button>
+              </Link>
             </CardContent>
           </Card>
 

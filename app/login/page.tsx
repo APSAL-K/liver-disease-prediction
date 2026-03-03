@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { setUser, setToken } from '@/lib/redux-store';
 import { cacheStorage } from '@/lib/cache-storage';
@@ -14,6 +14,26 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // If user already logged in, send to dashboard instead of showing form
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const savedUserRaw = localStorage.getItem('user');
+    if (!savedUserRaw) return;
+
+    try {
+      const savedUser = JSON.parse(savedUserRaw);
+      if (savedUser?.role === 'patient') {
+        router.replace('/dashboard/patient');
+      } else if (savedUser?.role === 'doctor') {
+        router.replace('/dashboard/doctor');
+      } else if (savedUser?.role === 'admin') {
+        router.replace('/dashboard/admin');
+      }
+    } catch {
+      // ignore parse errors and stay on login
+    }
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +59,10 @@ export default function LoginPage() {
       cacheStorage.setUser(mockUser);
       cacheStorage.setToken(mockToken);
 
+      // Also store in plain localStorage for auth hook / API
+      localStorage.setItem('token', mockToken);
+      localStorage.setItem('user', JSON.stringify(mockUser));
+
       router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
@@ -58,52 +82,7 @@ export default function LoginPage() {
       animation: 'fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
       backgroundAttachment: 'fixed',
     }}>
-      {/* Navigation Bar */}
-      <div style={{
-        position: 'fixed',
-        top: '20px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        background: `hsl(var(--card))`,
-        borderRadius: '50px',
-        padding: '12px 24px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '20px',
-        boxShadow: 'var(--shadow-lg)',
-        zIndex: 50,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: `hsl(var(--primary))` }}>
-          <span style={{ fontSize: '20px' }}>💚</span>
-          <span style={{ fontWeight: '800', fontSize: '16px' }}>LiverGuard AI</span>
-        </div>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <div style={{
-            padding: '6px 12px',
-            background: `hsl(var(--primary)/.2)`,
-            borderRadius: '20px',
-            fontSize: '11px',
-            fontWeight: '700',
-            color: `hsl(var(--primary))`,
-            letterSpacing: '0.5px',
-            textTransform: 'uppercase',
-          }}>
-            🔒 Clinical Security
-          </div>
-          <div style={{
-            padding: '6px 12px',
-            background: `hsl(var(--accent)/.2)`,
-            borderRadius: '20px',
-            fontSize: '11px',
-            fontWeight: '700',
-            color: `hsl(var(--accent))`,
-            letterSpacing: '0.5px',
-            textTransform: 'uppercase',
-          }}>
-            ⚡ Refresh Engine
-          </div>
-        </div>
-      </div>
+      
 
       <div style={{
         width: '100%',
@@ -130,7 +109,7 @@ export default function LoginPage() {
             border: `1px solid hsl(var(--border))`,
             textTransform: 'uppercase',
           }}>
-            🩺 Next-Gen Diagnostic Intelligence
+             Next-Gen Diagnostic Intelligence
           </div>
           <h1 style={{
             fontSize: '32px',
@@ -309,10 +288,10 @@ export default function LoginPage() {
           borderRadius: '10px',
           border: `1.5px solid hsl(var(--border))`,
           fontSize: '12px',
-          color: `hsl(var(--card-foreground))`,
+          color: "white",
           lineHeight: '1.8',
         }}>
-          <p style={{ fontWeight: '700', marginBottom: '8px', color: `hsl(var(--primary))` }}>Demo Credentials</p>
+          <p style={{ fontWeight: '700', marginBottom: '8px', color: "white" }}>Demo Credentials</p>
           <p>📧 Email: demo@example.com</p>
           <p>🔑 Password: anything</p>
         </div>

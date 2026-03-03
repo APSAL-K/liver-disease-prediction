@@ -45,9 +45,9 @@ export default function HomePage() {
               color: 'white',
               fontSize: '18px'
             }}>
-              ❤️
+              <span style={{ fontSize: '20px' }}>💔</span>
             </span>
-            <span>LiverCare</span>
+            <span>Liver Disease Prediction</span>
           </div>
           <div style={{ display: 'flex', gap: '12px' }}>
             {isLoggedIn ? (
@@ -71,12 +71,12 @@ export default function HomePage() {
               </Link>
             ) : (
               <>
-                <Link href="/login" style={{
+                <Link href="/auth/login" style={{
                   padding: '10px 20px',
                   borderRadius: '8px',
                   border: `1px solid hsl(var(--border))`,
                   background: `hsl(var(--card))`,
-                  color: `hsl(var(--foreground))`,
+                  color: 'white',
                   textDecoration: 'none',
                   fontWeight: '500',
                   fontSize: '14px',
@@ -90,7 +90,7 @@ export default function HomePage() {
                 }}>
                   Login
                 </Link>
-                <Link href="/signup" style={{
+                <Link href="/auth/signup" style={{
                   padding: '10px 20px',
                   borderRadius: '8px',
                   background: `hsl(var(--primary))`,
@@ -183,7 +183,7 @@ export default function HomePage() {
               padding: '14px 32px',
               borderRadius: '8px',
               background: `hsl(var(--card))`,
-              color: `hsl(var(--foreground))`,
+              color: "white",
               textDecoration: 'none',
               fontWeight: '600',
               fontSize: '16px',
@@ -255,6 +255,16 @@ export default function HomePage() {
                 icon: '⚡',
                 title: 'Instant Results',
                 description: 'Complete assessment and get AI-powered results in minutes, not days.'
+              },
+              {
+                icon: '❤️',
+                title: 'Personalized Care',
+                description: 'Get personalized care tailored to your health status and risk factors.'
+              },
+              {
+                icon: '📱',
+                title: 'Mobile Access',
+                description: 'Access your health data and connect with doctors on the go with our mobile-friendly platform.'
               }
             ].map((feature, i) => (
               <div key={i} style={{
@@ -280,7 +290,7 @@ export default function HomePage() {
                   fontSize: '18px',
                   fontWeight: '600',
                   marginBottom: '12px',
-                  color: `hsl(var(--foreground))`
+                  color: "white"
                 }}>
                   {feature.title}
                 </h3>
@@ -354,7 +364,7 @@ export default function HomePage() {
         color: `hsl(var(--muted-foreground))`,
         fontSize: '14px'
       }}>
-        <p>© 2024 LiverCare. All rights reserved. Privacy Policy • Terms of Service</p>
+        <p>© 2026 Liver Disease Prediction. All rights reserved. Privacy Policy • Terms of Service</p>
       </footer>
     </div>
   );

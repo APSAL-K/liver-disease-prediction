@@ -3,15 +3,19 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useDispatch } from 'react-redux';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertCircle, Loader2 } from 'lucide-react';
+import { setUser, setToken } from '@/lib/redux-store';
+import { cacheStorage } from '@/lib/cache-storage';
 
 export default function SignupPage() {
   const router = useRouter();
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -68,9 +72,17 @@ export default function SignupPage() {
         return;
       }
 
-      // Store token in localStorage
+      // Store token & user in localStorage (for hooks / API headers)
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
+
+      // Store in Redux for global state
+      dispatch(setUser(data.user));
+      dispatch(setToken(data.token));
+
+      // Store in cacheStorage for other modules
+      cacheStorage.setUser(data.user);
+      cacheStorage.setToken(data.token);
 
       // Redirect to appropriate dashboard
       if (data.user.role === 'patient') {
@@ -94,7 +106,7 @@ export default function SignupPage() {
           <div className="mb-4 inline-block rounded-full bg-primary/10 p-4">
             <div className="text-3xl font-bold text-primary">⚕️</div>
           </div>
-          <h1 className="text-3xl font-bold text-foreground">LiverCare</h1>
+          <h1 className="text-3xl font-bold text-foreground">Liver Disease Prediction</h1>
           <p className="mt-2 text-muted-foreground">Join our healthcare platform today</p>
         </div>
 
@@ -220,7 +232,7 @@ export default function SignupPage() {
         </Card>
 
         <div className="mt-6 text-center text-xs text-muted-foreground">
-          <p>© 2026 LiverCare. Your health, our priority.</p>
+          <p>© 2026 Liver Disease Prediction. Your health, our priority.</p>
         </div>
       </div>
     </div>
