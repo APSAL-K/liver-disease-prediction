@@ -8,6 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertCircle, Loader2, AlertTriangle } from 'lucide-react';
+import { useDispatch } from 'react-redux';
+import { setPredictions } from '@/lib/redux-store';
+import { cacheStorage } from '@/lib/cache-storage';
 
 interface RiskResult {
   riskLevel: string;
@@ -44,6 +47,7 @@ const RISK_BADGE_COLORS = {
 
 export default function HealthAssessmentPage() {
   const router = useRouter();
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState<Record<string, any>>({
     age: '',
     gender: 'male',
@@ -95,7 +99,43 @@ export default function HealthAssessmentPage() {
         return;
       }
 
-      setResult(data.prediction);
+      const prediction = {
+        ...data.prediction,
+        hasDisease: data.prediction.riskLevel !== 'None',
+      };
+
+      // Store in local state for this page
+      setResult(prediction);
+
+      // Store in Redux for global access
+      dispatch(setPredictions([prediction]));
+
+      // Store in cacheStorage for persistence
+      cacheStorage.setPredictions([prediction]);
+
+      // Mirror to simple dashboard "lastPrediction" format
+      const color =
+        prediction.riskLevel === 'High'
+          ? '#ef4444'
+          : prediction.riskLevel === 'Medium'
+            ? '#f59e0b'
+            : prediction.riskLevel === 'Low'
+              ? '#10b981'
+              : '#06b6d4';
+
+      const lastPrediction = {
+        level: prediction.riskLevel === 'None' ? 'No Disease' : 'Disease',
+        severity: prediction.riskLevel,
+        timestamp: new Date().toISOString(),
+        color,
+        formData: {
+          totalBilirubin: prediction.medicalMetrics?.totalBilirubin,
+          albumin: prediction.medicalMetrics?.albumin,
+          // platelets not part of this schema; leave undefined so dashboard shows "--"
+        },
+      };
+
+      localStorage.setItem('lastPrediction', JSON.stringify(lastPrediction));
     } catch (err) {
       setError('An error occurred. Please try again.');
     } finally {

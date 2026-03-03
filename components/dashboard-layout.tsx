@@ -62,21 +62,20 @@ export default function DashboardLayout({
     userRole === 'doctor'
       ? doctorMenuItems
       : userRole === 'admin'
-      ? adminMenuItems
-      : patientMenuItems;
+        ? adminMenuItems
+        : patientMenuItems;
 
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
       <aside
-        className={`${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } fixed md:relative md:translate-x-0 transition-transform z-40 w-64 border-r border-border bg-background h-full flex flex-col`}
+        className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          } fixed md:relative md:translate-x-0 transition-transform z-40 w-64 border-r border-border bg-background h-full flex flex-col`}
       >
         <div className="p-6 border-b border-border flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Heart className="w-6 h-6 text-primary" />
-            <span className="font-bold">LiverCare</span>
+            <span className="font-bold">Liver Disease Prediction</span>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
@@ -94,11 +93,10 @@ export default function DashboardLayout({
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  isActive
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-muted'
-                }`}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-muted'
+                  }`}
                 onClick={() => setSidebarOpen(false)}
               >
                 <Icon className="w-5 h-5" />
@@ -133,7 +131,7 @@ export default function DashboardLayout({
             </button>
             <div>
               <p className="text-sm text-muted-foreground">Welcome</p>
-              <p className="font-semibold">{user?.name || 'User'}</p>
+              <p className="font-semibold">{user ? `${user.firstName} ${user.lastName}` : 'User'}</p>
             </div>
           </div>
           <div className="text-sm text-muted-foreground capitalize">

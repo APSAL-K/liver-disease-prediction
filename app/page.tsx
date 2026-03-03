@@ -1,43 +1,113 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Heart, Users, Shield, TrendingUp, Brain, Zap } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/lib/redux-store';
 import Link from 'next/link';
 
 export default function HomePage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    setIsLoggedIn(!!token);
-  }, []);
+  const { isLoggedIn } = useSelector((state: RootState) => state.auth);
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: `hsl(var(--background))` }}>
       {/* Navigation */}
-      <nav className="border-b border-border sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <Heart className="w-6 h-6 text-primary" />
-            <span className="font-bold text-xl">LiverCare</span>
+      <nav style={{
+        borderBottom: `1px solid hsl(var(--border))`,
+        position: 'sticky',
+        top: 0,
+        background: `hsl(var(--background) / 0.95)`,
+        backdropFilter: 'blur(10px)',
+        zIndex: 50
+      }}>
+        <div style={{
+          maxWidth: '1280px',
+          margin: '0 auto',
+          padding: '16px 24px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            fontSize: '20px',
+            fontWeight: 'bold',
+            color: `hsl(var(--foreground))`
+          }}>
+            <span style={{
+              width: '32px',
+              height: '32px',
+              background: `linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))`,
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontSize: '18px'
+            }}>
+              <span style={{ fontSize: '20px' }}>💔</span>
+            </span>
+            <span>Liver Disease Prediction</span>
           </div>
-          <div className="flex gap-3">
+          <div style={{ display: 'flex', gap: '12px' }}>
             {isLoggedIn ? (
-              <>
-                <Button variant="outline" asChild>
-                  <Link href="/dashboard">Dashboard</Link>
-                </Button>
-              </>
+              <Link href="/dashboard" style={{
+                padding: '10px 20px',
+                borderRadius: '8px',
+                background: `hsl(var(--primary))`,
+                color: `hsl(var(--primary-foreground))`,
+                textDecoration: 'none',
+                fontWeight: '500',
+                fontSize: '14px',
+                transition: 'all 0.2s ease'
+              }} onMouseOver={(e) => {
+                e.currentTarget.style.opacity = '0.9';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }} onMouseOut={(e) => {
+                e.currentTarget.style.opacity = '1';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}>
+                Dashboard
+              </Link>
             ) : (
               <>
-                <Button variant="outline" asChild>
-                  <Link href="/auth/login">Login</Link>
-                </Button>
-                <Button asChild>
-                  <Link href="/auth/signup">Sign Up</Link>
-                </Button>
+                <Link href="/auth/login" style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: `1px solid hsl(var(--border))`,
+                  background: `hsl(var(--card))`,
+                  color: 'white',
+                  textDecoration: 'none',
+                  fontWeight: '500',
+                  fontSize: '14px',
+                  transition: 'all 0.2s ease'
+                }} onMouseOver={(e) => {
+                  e.currentTarget.style.borderColor = `hsl(var(--primary))`;
+                  e.currentTarget.style.color = `hsl(var(--primary))`;
+                }} onMouseOut={(e) => {
+                  e.currentTarget.style.borderColor = `hsl(var(--border))`;
+                  e.currentTarget.style.color = `hsl(var(--foreground))`;
+                }}>
+                  Login
+                </Link>
+                <Link href="/auth/signup" style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  background: `hsl(var(--primary))`,
+                  color: `hsl(var(--primary-foreground))`,
+                  textDecoration: 'none',
+                  fontWeight: '500',
+                  fontSize: '14px',
+                  transition: 'all 0.2s ease'
+                }} onMouseOver={(e) => {
+                  e.currentTarget.style.opacity = '0.9';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }} onMouseOut={(e) => {
+                  e.currentTarget.style.opacity = '1';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}>
+                  Sign Up
+                </Link>
               </>
             )}
           </div>
@@ -45,123 +115,256 @@ export default function HomePage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="py-20 px-6">
-        <div className="max-w-6xl mx-auto text-center space-y-6">
-          <h1 className="text-5xl md:text-6xl font-bold text-balance">
-            Advanced Liver Disease <span className="text-primary">Prediction</span> & Care
+      <section style={{
+        padding: '80px 24px',
+        background: `linear-gradient(135deg, hsl(var(--background)), hsl(var(--muted))),
+                    radial-gradient(circle at 20% 50%, hsl(var(--primary)) / 0.05 0%, transparent 50%),
+                    radial-gradient(circle at 80% 80%, hsl(var(--accent)) / 0.05 0%, transparent 50%)`
+      }}>
+        <div style={{
+          maxWidth: '1280px',
+          margin: '0 auto',
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '24px'
+        }}>
+          <h1 style={{
+            fontSize: '56px',
+            fontWeight: '700',
+            lineHeight: '1.2',
+            color: `hsl(var(--foreground))`,
+            maxWidth: '800px',
+            margin: '0 auto'
+          }}>
+            Advanced Liver Disease <span style={{
+              background: `linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))`,
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text'
+            }}>Prediction & Care</span>
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto text-balance">
+          <p style={{
+            fontSize: '18px',
+            color: `hsl(var(--muted-foreground))`,
+            maxWidth: '600px',
+            margin: '0 auto',
+            lineHeight: '1.6'
+          }}>
             Harness the power of AI-driven health assessment and connect with expert hepatologists for personalized liver health management.
           </p>
-          <div className="flex gap-4 justify-center pt-4">
-            <Button size="lg" asChild>
-              <Link href="/auth/signup">Get Started</Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <Link href="/auth/login">Sign In</Link>
-            </Button>
+          <div style={{
+            display: 'flex',
+            gap: '16px',
+            justifyContent: 'center',
+            flexWrap: 'wrap',
+            marginTop: '16px'
+          }}>
+            <Link href="/signup" style={{
+              padding: '14px 32px',
+              borderRadius: '8px',
+              background: `hsl(var(--primary))`,
+              color: `hsl(var(--primary-foreground))`,
+              textDecoration: 'none',
+              fontWeight: '600',
+              fontSize: '16px',
+              transition: 'all 0.2s ease',
+              border: '1px solid transparent'
+            }} onMouseOver={(e) => {
+              e.currentTarget.style.opacity = '0.9';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }} onMouseOut={(e) => {
+              e.currentTarget.style.opacity = '1';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}>
+              Get Started Now
+            </Link>
+            <Link href="/login" style={{
+              padding: '14px 32px',
+              borderRadius: '8px',
+              background: `hsl(var(--card))`,
+              color: "white",
+              textDecoration: 'none',
+              fontWeight: '600',
+              fontSize: '16px',
+              transition: 'all 0.2s ease',
+              border: `1px solid hsl(var(--border))`
+            }} onMouseOver={(e) => {
+              e.currentTarget.style.borderColor = `hsl(var(--primary))`;
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }} onMouseOut={(e) => {
+              e.currentTarget.style.borderColor = `hsl(var(--border))`;
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}>
+              Sign In
+            </Link>
           </div>
         </div>
       </section>
 
       {/* Features */}
-      <section className="py-16 px-6 bg-muted/50">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-12">Features</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader>
-                <Brain className="w-10 h-10 text-primary mb-2" />
-                <CardTitle>AI-Powered Assessment</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Advanced machine learning models analyze your health parameters to predict liver disease risk with high accuracy.
+      <section style={{
+        padding: '80px 24px',
+        background: `hsl(var(--muted) / 0.3)`
+      }}>
+        <div style={{
+          maxWidth: '1280px',
+          margin: '0 auto'
+        }}>
+          <h2 style={{
+            fontSize: '36px',
+            fontWeight: '700',
+            textAlign: 'center',
+            marginBottom: '48px',
+            color: `hsl(var(--foreground))`
+          }}>
+            Powerful Features
+          </h2>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: '24px'
+          }}>
+            {[
+              {
+                icon: '🧠',
+                title: 'AI-Powered Assessment',
+                description: 'Advanced machine learning models analyze your health parameters to predict liver disease risk with high accuracy.'
+              },
+              {
+                icon: '👥',
+                title: 'Expert Doctors',
+                description: 'Connect with verified hepatologists and medical professionals for personalized consultations and guidance.'
+              },
+              {
+                icon: '🔒',
+                title: 'Secure & Private',
+                description: 'Your health data is encrypted and protected with enterprise-grade security standards.'
+              },
+              {
+                icon: '📊',
+                title: 'Real-time Monitoring',
+                description: 'Track your health metrics and receive personalized insights based on your unique profile.'
+              },
+              {
+                icon: '💡',
+                title: 'Personalized Insights',
+                description: 'Get actionable recommendations tailored to your health status and risk factors.'
+              },
+              {
+                icon: '⚡',
+                title: 'Instant Results',
+                description: 'Complete assessment and get AI-powered results in minutes, not days.'
+              },
+              {
+                icon: '❤️',
+                title: 'Personalized Care',
+                description: 'Get personalized care tailored to your health status and risk factors.'
+              },
+              {
+                icon: '📱',
+                title: 'Mobile Access',
+                description: 'Access your health data and connect with doctors on the go with our mobile-friendly platform.'
+              }
+            ].map((feature, i) => (
+              <div key={i} style={{
+                background: `hsl(var(--card))`,
+                border: `1px solid hsl(var(--border))`,
+                borderRadius: '12px',
+                padding: '32px',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer'
+              }} onMouseOver={(e) => {
+                e.currentTarget.style.borderColor = `hsl(var(--primary))`;
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = `0 12px 32px hsl(var(--primary) / 0.1)`;
+              }} onMouseOut={(e) => {
+                e.currentTarget.style.borderColor = `hsl(var(--border))`;
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}>
+                <div style={{ fontSize: '40px', marginBottom: '12px' }}>
+                  {feature.icon}
+                </div>
+                <h3 style={{
+                  fontSize: '18px',
+                  fontWeight: '600',
+                  marginBottom: '12px',
+                  color: "white"
+                }}>
+                  {feature.title}
+                </h3>
+                <p style={{
+                  fontSize: '14px',
+                  color: `hsl(var(--muted-foreground))`,
+                  lineHeight: '1.6'
+                }}>
+                  {feature.description}
                 </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <Users className="w-10 h-10 text-primary mb-2" />
-                <CardTitle>Expert Doctors</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Connect with verified hepatologists and medical professionals for personalized consultations and guidance.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <Shield className="w-10 h-10 text-primary mb-2" />
-                <CardTitle>Secure & Private</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Your health data is encrypted and protected with enterprise-grade security standards.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <TrendingUp className="w-10 h-10 text-primary mb-2" />
-                <CardTitle>Track Progress</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Monitor your health trends over time with detailed analytics and recommendations.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <Zap className="w-10 h-10 text-primary mb-2" />
-                <CardTitle>Instant Booking</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Book appointments with doctors instantly and manage your consultations seamlessly.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <Heart className="w-10 h-10 text-primary mb-2" />
-                <CardTitle>Holistic Care</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Get comprehensive health insights and actionable recommendations for better liver health.
-                </p>
-              </CardContent>
-            </Card>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-6">
-        <div className="max-w-4xl mx-auto text-center space-y-6 bg-primary/10 rounded-2xl p-12">
-          <h2 className="text-4xl font-bold">Start Your Health Journey Today</h2>
-          <p className="text-lg text-muted-foreground">
-            Get your AI-powered liver disease risk assessment in just a few minutes.
+      <section style={{
+        padding: '80px 24px',
+        background: `linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))`
+      }}>
+        <div style={{
+          maxWidth: '800px',
+          margin: '0 auto',
+          textAlign: 'center'
+        }}>
+          <h2 style={{
+            fontSize: '36px',
+            fontWeight: '700',
+            color: 'white',
+            marginBottom: '16px'
+          }}>
+            Ready to Take Control of Your Health?
+          </h2>
+          <p style={{
+            fontSize: '16px',
+            color: 'rgba(255,255,255,0.9)',
+            marginBottom: '32px',
+            lineHeight: '1.6'
+          }}>
+            Join thousands of patients who have already discovered their liver health status. Start your assessment today.
           </p>
-          <Button size="lg" asChild>
-            <Link href="/auth/signup">Begin Assessment</Link>
-          </Button>
+          <Link href="/signup" style={{
+            display: 'inline-block',
+            padding: '14px 40px',
+            borderRadius: '8px',
+            background: 'white',
+            color: `hsl(var(--primary))`,
+            textDecoration: 'none',
+            fontWeight: '600',
+            fontSize: '16px',
+            transition: 'all 0.2s ease'
+          }} onMouseOver={(e) => {
+            e.currentTarget.style.opacity = '0.9';
+            e.currentTarget.style.transform = 'translateY(-2px)';
+          }} onMouseOut={(e) => {
+            e.currentTarget.style.opacity = '1';
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}>
+            Get Started Free
+          </Link>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border py-8 px-6 mt-auto">
-        <div className="max-w-6xl mx-auto text-center text-muted-foreground text-sm">
-          <p>&copy; 2024 LiverCare. All rights reserved. Empowering health through technology.</p>
-        </div>
+      <footer style={{
+        borderTop: `1px solid hsl(var(--border))`,
+        padding: '32px 24px',
+        background: `hsl(var(--muted) / 0.2)`,
+        textAlign: 'center',
+        color: `hsl(var(--muted-foreground))`,
+        fontSize: '14px'
+      }}>
+        <p>© 2026 Liver Disease Prediction. All rights reserved. Privacy Policy • Terms of Service</p>
       </footer>
     </div>
   );
